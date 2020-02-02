@@ -2,3 +2,4 @@ notebook
 numpy
 pandas
 matplotlib
+ipywidgets
