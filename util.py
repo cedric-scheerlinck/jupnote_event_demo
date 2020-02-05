@@ -35,7 +35,8 @@ def normalize_image(image, percentile_lower=1, percentile_upper=99):
 
 
 def animate(images):
-    fig = plt.figure()
+    fig = plt.figure(figsize=(0.1, 0.1))  # don't take up room initially
+    fig.set_size_inches(7.2, 5.4, forward=False)  # resize but don't update gui
     ims = []
     for image in images:
         im = plt.imshow(normalize_image(image), cmap='gray', vmin=0, vmax=1, animated=True)
@@ -62,7 +63,7 @@ def load_events(path_to_events, n_events=None):
 
 
 def plot_3d(event_list, height, n_events=-1):
-    fig = plt.figure()
+    fig = plt.figure(figsize=(7.2, 5.4))
     ax = fig.add_subplot(111, projection='3d')
     x, y, t, c = [], [], [], []
     for e in event_list[:int(n_events)]:
