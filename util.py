@@ -59,3 +59,22 @@ def load_events(path_to_events, n_events=None):
         event_list.append(Event(t, int(x), int(y), -1 if p < 0.5 else 1))
     print('Loaded {:.2f}M events'.format(len(event_list) / 1e6))
     return event_list, width, height
+
+
+def plot_3d(event_list, height, n_events=-1):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    x, y, t, c = [], [], [], []
+    for e in event_list[:int(n_events)]:
+        x.append(e.x)
+        y.append(e.y)
+        t.append(e.t * 1e3)
+        c.append('r' if e.p == 1 else 'b')
+    ax.scatter(t, x, y, c=c, marker='.')
+
+    ax.set_zlim(height, 0)
+    ax.set_xlabel('Time (ms)')
+    ax.set_ylabel('X')
+    ax.set_zlabel('Y')
+
+    plt.show()
