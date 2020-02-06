@@ -4,3 +4,6 @@ Install required packages:
 
 Enable ipywidgets:
 ```jupyter nbextension enable --py widgetsnbextension```
+
+## Run
+```jupyter notebook main.ipynb```
