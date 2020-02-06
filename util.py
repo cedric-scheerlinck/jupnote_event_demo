@@ -1,7 +1,9 @@
+import cv2
 from matplotlib.animation import ArtistAnimation
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+from os.path import join
 import pandas as pd
 import time
 
@@ -29,18 +31,37 @@ class Event:
         return f'Event(t={self.t:.3f}, x={self.x}, y={self.y}, p={self.p})'
 
 
+def normalize_image(image, percentile_lower=1, percentile_upper=99):
+    mini, maxi = np.percentile(image, (percentile_lower, percentile_upper))
+    if mini == maxi:
+        return 0 * image + 0.5  # gray image
+    return np.clip((image - mini) / (maxi - mini + 1e-5), 0, 1)
+
+
 class EventData:
     def __init__(self, event_list, width, height):
         self.event_list = event_list
         self.width = width
         self.height = height
 
-
-def normalize_image(image, percentile_lower=1, percentile_upper=99):
-    mini, maxi = np.percentile(image, (percentile_lower, percentile_upper))
-    if mini == maxi:
-        return 0 * image + 0.5  # gray image
-    return np.clip((image - mini) / (maxi - mini + 1e-5), 0, 1)
+    def add_frame_data(self, data_folder, max_frames=100):
+        timestamps = np.genfromtxt(join(data_folder, 'image_timestamps.txt'), max_rows=int(max_frames))
+        frames = []
+        frame_timestamps = []
+        with open(join(data_folder, 'image_timestamps.txt')) as f:
+            for line in f:
+                fname, timestamp = line.split(' ')
+                timestamp = float(timestamp)
+                frame = cv2.imread(join(data_folder, fname), cv2.IMREAD_GRAYSCALE)
+                if not (frame.shape[0] == self.height and frame.shape[1] == self.width):
+                    continue
+                frames.append(frame)
+                frame_timestamps.append(timestamp)
+                if timestamp >= self.event_list[-1].t:
+                    break
+        frame_stack = normalize_image(np.stack(frames, axis=0))
+        self.frames = [f for f in frame_stack]
+        self.frame_timestamps = frame_timestamps
 
 
 def animate(images, fig_title=''):
