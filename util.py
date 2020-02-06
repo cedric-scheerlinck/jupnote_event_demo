@@ -1,8 +1,9 @@
-import time
-import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.animation import ArtistAnimation
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 import pandas as pd
+import time
 
 
 class Timer:
@@ -16,6 +17,7 @@ class Timer:
         duration = self.end - self.start
         print(f'{self.msg}: {duration:.2f}s')
 
+
 class Event:
     __slots__ = 't', 'x', 'y', 'p'
     def __init__(self, t, x, y, p):
@@ -27,6 +29,13 @@ class Event:
         return f'Event(t={self.t:.3f}, x={self.x}, y={self.y}, p={self.p})'
 
 
+class EventData:
+    def __init__(self, event_list, width, height):
+        self.event_list = event_list
+        self.width = width
+        self.height = height
+
+
 def normalize_image(image, percentile_lower=1, percentile_upper=99):
     mini, maxi = np.percentile(image, (percentile_lower, percentile_upper))
     if mini == maxi:
@@ -34,8 +43,9 @@ def normalize_image(image, percentile_lower=1, percentile_upper=99):
     return np.clip((image - mini) / (maxi - mini + 1e-5), 0, 1)
 
 
-def animate(images):
+def animate(images, fig_title=''):
     fig = plt.figure(figsize=(0.1, 0.1))  # don't take up room initially
+    fig.suptitle(fig_title)
     fig.set_size_inches(7.2, 5.4, forward=False)  # resize but don't update gui
     ims = []
     for image in images:
@@ -45,7 +55,9 @@ def animate(images):
     plt.close(ani._fig)
     return ani
 
+
 def load_events(path_to_events, n_events=None):
+    print('Loading events...')
     header = pd.read_csv(path_to_events, delim_whitespace=True, names=['width', 'height'],
                          dtype={'width': np.int, 'height': np.int}, nrows=1)
     width, height = header.values[0]
@@ -59,23 +71,36 @@ def load_events(path_to_events, n_events=None):
         t, x, y, p = event
         event_list.append(Event(t, int(x), int(y), -1 if p < 0.5 else 1))
     print('Loaded {:.2f}M events'.format(len(event_list) / 1e6))
-    return event_list, width, height
+    return EventData(event_list, width, height)
 
 
-def plot_3d(event_list, height, n_events=-1):
-    fig = plt.figure(figsize=(7.2, 5.4))
+def plot_3d(event_data, n_events=-1):
+    fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
     x, y, t, c = [], [], [], []
-    for e in event_list[:int(n_events)]:
+    for e in event_data.event_list[:int(n_events)]:
         x.append(e.x)
         y.append(e.y)
         t.append(e.t * 1e3)
         c.append('r' if e.p == 1 else 'b')
     ax.scatter(t, x, y, c=c, marker='.')
-
-    ax.set_zlim(height, 0)
     ax.set_xlabel('Time (ms)')
     ax.set_ylabel('X')
     ax.set_zlabel('Y')
+    ax.set_zlim(*ax.get_zlim()[::-1])  # reverse 'y' image axis
 
-    plt.show()
+
+def event_slice(event_data, start=0, duration_ms=30):
+    events, height, width = event_data.event_list, event_data.height, event_data.width
+    mask = np.zeros((height, width), dtype=np.int8)
+    start_idx = int(start * (len(events) - 1))
+    end_time = events[start_idx].t + duration_ms / 1000.0
+    for e in events[start_idx:]:
+        mask[e.y, e.x] = e.p
+        if e.t >= end_time:
+            break
+    img_rgb = np.ones((height, width, 3), dtype=np.uint8) * 255
+    img_rgb[mask == -1] = (255, 0, 0)
+    img_rgb[mask == 1] = (0, 0, 255)
+    fig = plt.figure(figsize=(7.2, 5.4))
+    plt.imshow(img_rgb)
