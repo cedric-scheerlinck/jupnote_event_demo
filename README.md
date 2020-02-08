@@ -4,7 +4,7 @@
 Load and visualize events in a jupyter notebook.  
 Inspired by [https://github.com/cedric-scheerlinck/dvs_image_reconstruction](https://github.com/cedric-scheerlinck/dvs_image_reconstruction).
 
-![filter_pic](images/filter.png)
+![filter_pic](images/teaser.png)
 
 ## Installation
 Install required packages:
